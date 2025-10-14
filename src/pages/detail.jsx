@@ -1,9 +1,9 @@
 import React from 'react'
 
-export default function About() {
+export default function Detail() {
   return (
     <div>
-        <p>About</p>
+      <p>DETAIL</p>
     </div>
   )
 }
