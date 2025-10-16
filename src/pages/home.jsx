@@ -1,75 +1,87 @@
-import React from 'react'
-//solo para el grid
+import React, { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
-//esto es solo para card
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardMedia from '@mui/material/CardMedia';
 import Typography from '@mui/material/Typography';
 import CardActionArea from '@mui/material/CardActionArea';
-
-import { useState } from 'react';
-import { useEffect } from 'react';
 import { Link } from 'react-router';
-
+import Drawer from '../components/Drawer';
 
 export default function Home() {
-
   const [coins, setCoins] = useState([]);
+  const [limit, setLimit] = useState(0); // 0 = mostrar todas
+  const [orden, setOrden] = useState('asc'); // 'asc' o 'desc'
 
   useEffect(() => {
     fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd')
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error('Error en la respuesta del servidor');
-        }
-        return response.json();
-      })
+      .then((res) => res.json())
       .then((data) => {
-        setCoins(data);
-        console.log(data);
+        const ordenadas = data.sort((a, b) => a.current_price - b.current_price);
+        setCoins(ordenadas);
       })
-      .catch((err) => {
-        console.log(err.message);
-      })
+      .catch((err) => console.log(err.message));
   }, []);
+
+  const ordenarCoins = (tipo) => {
+    const ordenadas = [...coins].sort((a, b) =>
+      tipo === 'asc' ? a.current_price - b.current_price : b.current_price - a.current_price
+    );
+    setCoins(ordenadas);
+    setOrden(tipo);
+  };
+
+  const coinsToShow = limit > 0 ? coins.slice(0, limit) : coins;
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <Grid container spacing={3}>
+      <Drawer limit={limit} onChangeLimit={setLimit} onOrdenar={ordenarCoins} orden={orden} />
 
-        {coins.map((coin) => (
-          <Grid size={4} key={coin.id}>
-            <Card>
-              <CardActionArea  sx={{ display: 'flex', justifyContent: 'space-between' }} component={Link} to= {"/detail/" + coin.id}>
-
-                <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                  <CardContent sx={{ flex: '1 0 auto' }}>
-                    <Typography component="div" variant="h5">
-                      {coin.name}
-                    </Typography>
-                    <Typography variant="subtitle1" component="div" sx={{ color: 'text.secondary' }}>
-                      {coin.symbol}
-                    </Typography>
-                    <Typography variant="subtitle1" component="div" sx={{ color: 'green' }}>
-                      {coin.current_price} usd
-                    </Typography>
-                  </CardContent>
+      <Grid container spacing={3} sx={{ paddingRight: '240px' }}>
+        {coinsToShow.map((coin) => (
+          <Grid item xs={12} sm={6} md={4} key={coin.id}>
+            <Card
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: 300, // altura fija para todas las tarjetas
+              }}
+            >
+              <CardActionArea
+                component={Link}
+                to={`/detail/${coin.id}`}
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  height: '100%',
+                  padding: 2,
+                }}
+              >
+                <Box>
+                  <CardMedia
+                    component="img"
+                    image={coin.image}
+                    alt={coin.name}
+                    sx={{
+                      width: '80px',
+                      height: '80px',
+                      objectFit: 'contain',
+                      marginBottom: 2,
+                    }}
+                  />
+                  <Typography variant="h6">{coin.name}</Typography>
+                  <Typography sx={{ color: 'text.secondary' }}>{coin.symbol}</Typography>
                 </Box>
-                <CardMedia component="img" sx={{ width: 151 }} image={coin.image} alt="Live from space album cover" />
+                <Typography sx={{ color: 'green', fontWeight: 'bold', mt: 1 }}>
+                  {coin.current_price} usd
+                </Typography>
               </CardActionArea>
-
             </Card>
           </Grid>
         ))}
-
-
-
-
-
-
       </Grid>
     </Box>
-  )
+  );
 }
